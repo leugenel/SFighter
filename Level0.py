@@ -1,78 +1,54 @@
 __author__ = 'eugenel'
 
-import json
-import httplib
 import time
-import config #internal project configuration
+import quoteRest
 
-account = "HAH71340638"
-venue = "MKPEX"
-stock = "ICKI"
+account = "SPB65525666"
+venue = "SLPEX"
+stock = "HYYN"
 
-#Get the quote price
-def getTheQuotePrice(priceDecrise):
-    connection = httplib.HTTPSConnection(config.site)
-    connection.request("GET", "/ob/api/venues/"+venue+"/stocks/"+stock+"/quote", headers=config.head)
-    response = connection.getresponse()
+# Get the quote price
+def get_quote_price():
+    response, result = quoteRest.quote_quick(venue, stock)
     price=0
-    if(response.status==200):
-        result = json.loads(response.read())
+    if response == 200:
         print result
-        price=result['bid']-priceDecrise
+        price = result['last']
     else:
-        print response.status
-    connection.close()
+        print response
     return price
 
-#Get Order status returns true if closed and false if still open
-def getOrderStatus(orderID):
-    connection = httplib.HTTPSConnection(config.site)
-    connection.request("GET", "/ob/api/venues/"+venue+"/stocks/"+stock+"/orders/"+str(orderID), headers=config.head)
-    order_response=connection.getresponse()
-    if(order_response.status==200):
-        result=json.loads(order_response.read())
-        print result
-        connection.close()
-        if(not result['open']):
-            return True
-    else:
-        print order_response.status
-    return False
 
-price=getTheQuotePrice(50)
+price = get_quote_price()
 
-#Place a market order to buy stock:
-connection = httplib.HTTPSConnection(config.site)
-order = {"account":account,"price":price,"qty":100,"direction":"buy","orderType":"limit"}
+if price == 0:
+    print "No Price need try again"
+    exit(0,0)
 
-connection.request("POST","/ob/api/venues/"+venue+"/stocks/"+stock+"/orders",json.dumps(order),config.head)
-response = connection.getresponse()
-
-#Verify that the deal is Done
-if(response.status==200):
-    result = json.loads(response.read())
-    connection.close()
+# Place a market order to buy stock:
+response, result = quoteRest.set_order(venue, stock, account, price, 100)
+print result
+# Verify that the deal is Done
+Counter=0
+if response == 200:
     print result
-    if(result['ok'] and result['open']):
-        Counter=0
-        while(Counter<10):
-            # connection = httplib.HTTPSConnection(config.site)
-            # connection.request("GET", "/ob/api/venues/"+venue+"/stocks/"+stock+"/orders/"+str(result['id']), headers=config.head)
-            # order_response=connection.getresponse()
-            # if(order_response.status==200):
-            #     result=json.loads(order_response.read())
-            #     print result
-            #     if(not result['open']):
-            #         print "DONE!"
-            #         break
-            # else:
-            #     print order_response.status
-            if(getOrderStatus(result['id'])):
-                break
-            Counter+=1
-            #connection.close()
-            time.sleep(3)
+    if result['ok']:
+        if result['open']:
+            while Counter<10:
+                if quoteRest.get_order_status(venue,stock, result['id']):
+                    print "DONE!"
+                    break
+                Counter += 1
+                time.sleep(3)
+        else:
+            print "WE DONE IMMEDIATELY!"
+
+    else:
+        print "The setOrder request 'ok' flag is FALSE"
 else:
-    print response.status
-if (Counter==10):
+    print response
+
+if Counter == 10:
     print "NOT SAILED"
+else:
+    print "It was " + str(Counter) + " iterations"
