@@ -1,24 +1,24 @@
 __author__ = 'eugenel'
 
-import json
-import httplib
+import time
 import config #internal project configuration
+import Common
+import quoteRest
 
+# We need to buy 100 000 shares - lets go to 500 for one buy
 
-connection = httplib.HTTPSConnection(config.site)
+for num in range(1, 100):
+    # Receive first quote and price
+    price = Common.get_quote_price()
+    print price
+    if price == 0:
+        print "No Price ---> need to try again"
+        exit(0,0)
+    # Place a market order to buy stock:
+    response, result = quoteRest.set_order(config.venue, config.stock, config.account, price, 1000)
+    print result
+    if not Common.is_deal_done(10, response, result):
+        print "We fail on this deal"
+        break
+    time.sleep(2)
 
-account = "YS36942955"
-venue = "OEGEX"
-stock = "WHC"
-
-#Place a market order to buy stock:
-order = {"account":account,"price":2000,"qty":100,"direction":"buy","orderType":"limit"}
-
-connection.request("POST","/ob/api/venues/"+venue+"/stocks/"+stock+"/orders",json.dumps(order),config.head)
-response = connection.getresponse()
-
-if(response.status==200):
-    result = json.loads(response.read())
-    #print response.read()
-    if(result['ok']):
-        print "OK"

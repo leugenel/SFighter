@@ -14,6 +14,8 @@ def quote_quick(venue, stock):
     connection.close()
     return response.status, result
 
+
+
 # Get Order status returns true if closed and false if still open
 def get_order_status(venue, stock, orderID):
     connection = httplib.HTTPSConnection(config.site)
