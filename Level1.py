@@ -17,10 +17,10 @@ import quoteRest
 # finish when buy 100000 shares
 
 # We need to buy 100 000 shares - lets go to 500 for one buy
-sleep_time = 0.3  # sec
+sleep_time = 0.1  # sec
 num_iterations = 10
 number_bids = 11
-num_shares = 100
+num_shares = 400
 bid_list = {}
 price_list = []
 
@@ -33,7 +33,7 @@ if price == 0:
 for i in range(1, number_bids):
     # Place a market order to buy stock: qty=num_shares
     if price > 50:
-        price -= 50
+        price -= 10
     price_list.append(price)
     response, result = quoteRest.set_order(config.venue, config.stock, config.account, price, num_shares)
     if response != 200:
@@ -42,30 +42,42 @@ for i in range(1, number_bids):
     print result
     bid_list[result['id']] = 1
 
+print "Bid list:"
+print bid_list
+print "Price list:"
 print price_list
+
 # Now the big iteration
 max_buy_value = 100000
 buy_value = 0
 while buy_value < max_buy_value:
     # Verify bids status
-    for key, value in bid_list.iteritems():
-        if quoteRest.get_order_status(config.venue, config.stock, key): # Done was buy
-            buy_value += num_shares
-            value = num_iterations+1 # value more than maximum counter, we mark the bid that need be deleted
-        else:
-            value += 1
-        time.sleep(sleep_time)
-    print bid_list
+    for i in range (1, num_iterations+1):
+        for key, value in bid_list.iteritems():
+            if value < num_iterations+1 and quoteRest.get_order_status(config.venue, config.stock, key): # Done was buy
+                print "The deal done:" + str(key)
+                buy_value += num_shares
+                bid_list[key] = num_iterations+1 # value more than maximum counter, we mark the bid that need be deleted
+            else:
+                if value < num_iterations+1:
+                    bid_list[key] += 1
+            time.sleep(sleep_time)
+        print "Bid list:"
+        print bid_list
+
     # Clean bid list
     i = 0
     for key, value in bid_list.items():
         if value == num_iterations:
             price_list[i] += 50
+            print "Cancel order " + str(key)
+            quoteRest.cancel_order(config.venue, config.stock, key)
         else:
             if price_list[i] > 50:
-                price_list[i] -= 50
+                price_list[i] -= 10
         del bid_list[key]
         i += 1
+    print "Price list:"
     print price_list
     for i in range (len(price_list)):
         response, result = quoteRest.set_order(config.venue, config.stock, config.account, price_list[i], num_shares)
@@ -75,5 +87,6 @@ while buy_value < max_buy_value:
         print result
         bid_list[result['id']] = 1
 
+    print "Bid list:"
     print bid_list
     time.sleep(sleep_time)

@@ -15,7 +15,6 @@ def quote_quick(venue, stock):
     return response.status, result
 
 
-
 # Get Order status returns true if closed and false if still open
 def get_order_status(venue, stock, orderID):
     connection = httplib.HTTPSConnection(config.site)
@@ -36,10 +35,19 @@ def set_order(venue, stock, account, price, qty):
     order = {"account":account,"price":price,"qty":qty,"direction":"buy","orderType":"limit"}
     connection.request("POST","/ob/api/venues/"+venue+"/stocks/"+stock+"/orders",json.dumps(order),config.head)
     response = connection.getresponse()
-
     result = None
     if response.status == 200:
         result = json.loads(response.read())
     connection.close()
+    return response.status, result
 
+
+def cancel_order(venue, stock, orderID):
+    connection = httplib.HTTPSConnection(config.site)
+    connection.request("DELETE", "/ob/api/venues/"+venue+"/stocks/"+stock+"/orders/"+str(orderID), headers=config.head)
+    response=connection.getresponse()
+    result = None
+    if response.status == 200:
+        result=json.loads(response.read())
+    connection.close()
     return response.status, result

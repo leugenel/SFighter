@@ -8,6 +8,7 @@ import Common
 sleep_time = 3
 num_iterations = 10
 price=Common.price_loop(sleep_time, num_iterations)
+
 if price == 0:
     print "No Price need try again"
     sys.exit()
@@ -21,4 +22,6 @@ sleep_time = 3
 if Common.is_deal_done(num_iterations, response, result, sleep_time):
     print "DEAL DONE!"
 else:
+    response, result = quoteRest.cancel_order(config.venue, config.stock, result['id'])
+    print result
     print "NO DEAL!"
