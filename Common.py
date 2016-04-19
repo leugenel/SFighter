@@ -19,25 +19,25 @@ def get_quote_price():
     return price
 
 # Verify that the deal is Done
-def wait_for_close(num_iterations, result_id):
+def wait_for_close(num_iterations, result_id, sleep_time):
     counter=0
     while counter<num_iterations:
         if quoteRest.get_order_status(config.venue, config.stock, result_id):
             print "DONE!"
             break
         counter += 1
-        time.sleep(3)
+        time.sleep(sleep_time)
     return counter
 
 # Verify that the deal is Done
-def is_deal_done(num_iterations, response, result):
+def is_deal_done(num_iterations, response, result, sleep_time):
     done = False
     counter=0
     if response == 200:
         print result
         if result['ok']:
             if result['open']:
-                counter = wait_for_close(num_iterations, result['id'])
+                counter = wait_for_close(num_iterations, result['id'], sleep_time)
             else:
                 print "WE DONE IMMEDIATELY!"
                 done = True

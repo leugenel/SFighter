@@ -17,7 +17,8 @@ response, result = quoteRest.set_order(config.venue, config.stock, config.accoun
 print result
 
 num_iterations=10
-if Common.is_deal_done(num_iterations, response, result):
+sleep_time = 3
+if Common.is_deal_done(num_iterations, response, result, sleep_time):
     print "DEAL DONE!"
 else:
     print "NO DEAL!"
