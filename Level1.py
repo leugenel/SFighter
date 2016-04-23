@@ -52,7 +52,7 @@ max_buy_value = 100000
 buy_value = 0
 while buy_value < max_buy_value:
     # Verify bids status
-    for i in range (1, num_iterations+1):
+    for i in range (1, num_iterations):
         for key, value in bid_list.iteritems():
             if value < num_iterations+1 and quoteRest.get_order_status(config.venue, config.stock, key): # Done was buy
                 print "The deal done:" + str(key)
@@ -69,7 +69,7 @@ while buy_value < max_buy_value:
     i = 0
     for key, value in bid_list.items():
         if value == num_iterations:
-            price_list[i] += 50
+            price_list[i] += 10
             print "Cancel order " + str(key)
             quoteRest.cancel_order(config.venue, config.stock, key)
         else:
