@@ -3,7 +3,9 @@ __author__ = 'eugenel'
 import quoteRest
 import config
 import time
-import sys
+import logging
+
+
 
 def get_quote_price():
     response, result = quoteRest.quote_quick(config.venue, config.stock)
@@ -61,3 +63,7 @@ def price_loop(sleep_time, num_iterations):
             break
         time.sleep(sleep_time)
     return price
+
+def plog_info(message):
+    print message
+    logging.info(message)

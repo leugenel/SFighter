@@ -30,9 +30,9 @@ def get_order_status(venue, stock, orderID):
     return False
 
 
-def set_order(venue, stock, account, price, qty):
+def set_order(venue, stock, account, price, qty, direction="buy"):
     connection = httplib.HTTPSConnection(config.site)
-    order = {"account":account,"price":price,"qty":qty,"direction":"buy","orderType":"limit"}
+    order = {"account":account,"price":price,"qty":qty,"direction":direction,"orderType":"limit"}
     connection.request("POST","/ob/api/venues/"+venue+"/stocks/"+stock+"/orders",json.dumps(order),config.head)
     response = connection.getresponse()
     result = None
