@@ -11,7 +11,10 @@ sleep_time = 0.1  # sec
 num_iterations = 10
 number_bids = 10
 num_shares = 400
-sell_list = {}
+all_profit=0
+all_buy=0
+all_sell=0
+#sell_list = {}
 
 def buy_shares(buy_this_value):
     buy_done = False
@@ -56,10 +59,10 @@ def sell_shares(sell_this_value, price):
     if not sell_done:
         Common.plog_info("Not sell this package")
         #sell_list[share_id]=price+update_price
-    Common.plog_info("Sell list:")
-    Common.plog_info(sell_list)
+    #Common.plog_info("Sell list:")
+    #Common.plog_info(sell_list)
 
-    return sell_done
+    return sell_done, price+update_price
 
 is_sel = True
 while True:
@@ -70,10 +73,16 @@ while True:
         if not is_buy:
             Common.plog_info("Not success to buy this package")
             continue
+        all_buy+=price_buy
+        Common.plog_info(all_buy)
+        all_profit-=all_buy
 
     #Now selling
     if price_buy > 0:
-        is_sel=sell_shares(num_shares, price_buy)
+        is_sel, sell_price = sell_shares(num_shares, price_buy)
+        all_sell+=sell_price
+        Common.plog_info(all_sell)
     else:
         Common.plog_info("Price for buying is 0")
-
+    all_profit+=all_sell
+    Common.plog_info("Current profit: "+str(all_profit))
