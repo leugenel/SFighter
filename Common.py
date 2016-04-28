@@ -6,18 +6,18 @@ import time
 import logging
 
 
-
 def get_quote_price():
     response, result = quoteRest.quote_quick(config.venue, config.stock)
     price=0
     if response == 200:
-        print result
+        plog_info("get_quote_price() - result")
+        plog_info(result)
         if result['askSize']==0 or result['bidSize']==0:
             return price
         else:
-            price = (result['bid']+result['ask'])/2
+            price = int(result['ask']) #(result['bid']+result['ask'])/2
     else:
-        print response
+        plog_info(response)
     return price
 
 # Verify that the deal is Done
@@ -25,7 +25,7 @@ def wait_for_close(num_iterations, result_id, sleep_time):
     counter=0
     while counter<num_iterations:
         if quoteRest.get_order_status(config.venue, config.stock, result_id):
-            print "DONE!"
+            plog_info("DONE!")
             break
         counter += 1
         time.sleep(sleep_time)
@@ -36,22 +36,22 @@ def is_deal_done(num_iterations, response, result, sleep_time):
     done = False
     counter=0
     if response == 200:
-        print result
+        plog_info(result)
         if result['ok']:
             if result['open']:
                 counter = wait_for_close(num_iterations, result['id'], sleep_time)
             else:
-                print "WE DONE IMMEDIATELY!"
+                plog_info("WE DONE IMMEDIATELY!")
                 done = True
         else:
-            print "The setOrder request 'ok' flag --> FALSE"
+            plog_info("The setOrder request 'ok' flag --> FALSE")
     else:
-        print response
+        plog_info(response)
 
     if counter == num_iterations:
-        print "NOT SAILED"
+        plog_info("NOT SAILED")
     else:
-        print "It was " + str(counter) + " iterations"
+        plog_info("It was " + str(counter) + " iterations")
         done = True
     return done
 
