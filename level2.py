@@ -20,22 +20,23 @@ def buy_shares(buy_this_value):
     buy_done = False
     # Try buy 400 shares
     the_price = Common.price_loop(sleep_time, num_iterations)
-    response, result = quoteRest.set_order(config.venue, config.stock, config.account, the_price, buy_this_value)
+    response, result = quoteRest.set_order(config.venue, config.stock, config.account, the_price, buy_this_value,
+                                           "buy", "fill-or-kill")
     if response != 200:
         Common.plog_info(response)
         sys.exit()
     Common.plog_info("Set order for buy:")
     Common.plog_info(result)
     # Verify that buying works
-    for i in range (1, num_iterations):
-        if quoteRest.get_order_status(config.venue, config.stock, result['id']):
-            buy_done=True
-            break
-        time.sleep(sleep_time)
-    # Cancel order if not buy it
-    if not buy_done:
-        quoteRest.cancel_order(config.venue, config.stock, result['id'])
-        Common.plog_info("Cancel buy order")
+    # for i in range (1, num_iterations):
+    #     if quoteRest.get_order_status(config.venue, config.stock, result['id']):
+    #         buy_done=True
+    #         break
+    #     time.sleep(sleep_time)
+    # # Cancel order if not buy it
+    # if not buy_done:
+    #     quoteRest.cancel_order(config.venue, config.stock, result['id'])
+    #     Common.plog_info("Cancel buy order")
 
     return buy_done, the_price, result['id']
 
@@ -45,13 +46,15 @@ def sell_shares(sell_this_value, price):
     price_delta = 10
     for j in range (1, num_iterations):
         update_price -= price_delta
-        response, result = quoteRest.set_order(config.venue, config.stock, config.account, price+update_price, sell_this_value, "sell")
+        response, result_json = quoteRest.set_order(config.venue, config.stock, config.account, price+update_price, sell_this_value, "sell")
         if response != 200:
             Common.plog_info(response)
             sys.exit()
         Common.plog_info("Set order for sell:")
-        Common.plog_info(result)
-        if quoteRest.get_order_status(config.venue, config.stock, share_id):
+        Common.plog_info(result_json)
+        is_ok, result_json = quoteRest.get_order_status(config.venue, config.stock, share_id)
+        Common.plog_info("Status of the selling order "+str(result_json))
+        if is_ok:
             sell_done = True
             Common.plog_info("Sell done for price "+str(price+update_price))
             break
