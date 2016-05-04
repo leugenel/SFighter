@@ -31,7 +31,7 @@ class SellSide(object):
         Main procedure
     """
     def game_run(self):
-        for i in range (1, self.NUM_ITERATIONS):
+        for i in range (1, self.NUM_ITERATIONS*10):
             self.buy_shares(self.NUM_SHARES)
             if self.qty_filled_buy == 0:
                 Common.plog_info("Not success to buy this package. Built the new one")
@@ -56,6 +56,7 @@ class SellSide(object):
         Common.plog_info("We buy :"+str(self.buy_price)+" The all buy until now: "+
                          str(self.all_buy)+" Tha all profit: "+str(self.all_profit))
         Common.plog_info("===============================================================")
+
     """
         Three loops try to sell the order, first for the profit, second for the same price, third lost the money
         We hope this enough to sell
@@ -64,13 +65,13 @@ class SellSide(object):
         order_sell = sell_this_value
         self.qty_filled_sell = 0
         Common.plog_info("Try sell with profit")
-        order_sell = self.sell_loop(order_sell, self.buy_price + self.UPDATE_PRICE, self.DELTA_PRICE)
+        order_sell = self.sell_loop(self.buy_price + self.UPDATE_PRICE, order_sell, self.DELTA_PRICE)
         if self.qty_filled_sell < sell_this_value: # Now we sell for the original price - no profit
             Common.plog_info("Try sell w/o profit")
-            order_sell = self.sell_loop(order_sell, self.buy_price)
+            order_sell = self.sell_loop(self.buy_price, order_sell)
         if self.qty_filled_sell < order_sell: # Now we sell for the worse price - lost money
             Common.plog_info("Try sell with lost money")
-            self.sell_loop(order_sell, self.buy_price, self.DELTA_PRICE)
+            self.sell_loop(self.buy_price, order_sell, self.DELTA_PRICE)
 
         self.all_sell += self.sell_price
         self.all_profit += self.sell_price
@@ -92,6 +93,11 @@ class SellSide(object):
                 if sell_now < 0:
                     raise ValueError("Sell can't be negative")
                 break
+            else:
+                sell_now -= self.qty_filled_sell
+                Common.plog_info("We continue sell "+str(sell_now))
+                if sell_now < 0:
+                    raise ValueError("Sell can't be negative")
         return sell_now
 
     """
@@ -105,14 +111,17 @@ class SellSide(object):
         self.response_process(response, result_json)
         sell_id = result_json['id']
         time.sleep(self.SLEEP_TIME)
-        is_ok, result_json = quoteRest.get_order_status(config.venue, config.stock, sell_id)
-        Common.plog_info("Sell status:")
-        self.response_process(response, result_json)
-        self.qty_filled_sell += result_json['totalFilled']
-        self.sell_price = result_json['price']
         quoteRest.cancel_order(config.venue, config.stock, sell_id)
-        return result_json['totalFilled']
+        is_ok, result_json_status = quoteRest.get_order_status(config.venue, config.stock, sell_id)
+        Common.plog_info("Sell status:")
+        self.response_process(response, result_json_status)
+        self.qty_filled_sell += result_json_status['totalFilled']
+        self.sell_price = result_json_status['price']
+        return result_json_status['totalFilled']
 
+    """
+            Response processing
+    """
     def response_process(self, response, result):
         if response != 200:
             Common.plog_info("We failed with " + str(response))
