@@ -81,7 +81,8 @@ class SellSide(object):
         Common.plog_info("===============================================================")
 
     """
-        Minimal sell loop
+        Minimal sell loop.
+        Decrease the price each iteration until the original price.
     """
     def sell_loop(self, price, num_to_sell, delta_price=0):
         sell_now = num_to_sell
@@ -102,6 +103,8 @@ class SellSide(object):
 
     """
         Basic sell
+        One sell tact with the price.
+        After timeout if not sailed cancel the request.
     """
     def basic_sell(self, sell_this_value, price):
         response, result_json = quoteRest.set_order(config.venue, config.stock, config.account,
