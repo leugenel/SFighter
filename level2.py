@@ -9,7 +9,7 @@ import logging
 class SellSide(object):
     SLEEP_TIME = 0.1
     NUM_ITERATIONS = 10
-    NUM_SHARES = 10
+    NUM_SHARES = 30
     UPDATE_PRICE = 100
     DELTA_PRICE = 10
 
@@ -90,12 +90,12 @@ class SellSide(object):
             sold=self.basic_sell(sell_now, price-delta_price*i)
             if sold == sell_now:
                 Common.plog_info("We sell everything in this set")
-                sell_now -= self.qty_filled_sell
+                sell_now -= sold
                 if sell_now < 0:
                     raise ValueError("Sell can't be negative")
                 break
             else:
-                sell_now -= self.qty_filled_sell
+                sell_now -= sold
                 Common.plog_info("We continue sell "+str(sell_now))
                 if sell_now < 0:
                     raise ValueError("Sell can't be negative")
