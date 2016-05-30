@@ -2,7 +2,6 @@ __author__ = 'eugenel'
 import unittest
 from mock import patch, Mock, MagicMock
 import quoteRest
-import httplib
 
 class QuoteRestTest(unittest.TestCase):
 

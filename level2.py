@@ -25,16 +25,13 @@ class SellSide(object):
 
     def __init__(self):
         logging.basicConfig(filename='level2.log',level=logging.DEBUG, filemode='w')
-        self.game_run()
 
     """
         Main procedure
     """
     def game_run(self):
         for i in range (1, self.NUM_ITERATIONS*10):
-            self.buy_shares(self.NUM_SHARES)
-            if self.qty_filled_buy == 0:
-                Common.plog_info("Not success to buy this package. Built the new one")
+            if not self.buy_shares(self.NUM_SHARES):
                 continue
             self.sell_shares(self.NUM_SHARES)
 
@@ -44,18 +41,25 @@ class SellSide(object):
     """
     def buy_shares(self, buy_this_value):
         the_price = Common.price_loop(self.SLEEP_TIME, self.NUM_ITERATIONS)
+        Common.plog_info("The buy price from price_loop:" + str(the_price))
         response, result = quoteRest.set_order(config.venue, config.stock, config.account, the_price, buy_this_value,
                                                "buy", "fill-or-kill")
         Common.plog_info("Buying...")
         self.response_process(response, result)
         self.qty_filled_buy = result['totalFilled']
-        self.buy_price = result['price']
-        self.all_buy += self.buy_price
-        self.all_profit -= self.buy_price
-        Common.plog_info("===============================================================")
-        Common.plog_info("We buy :"+str(self.buy_price)+" The all buy until now: "+
-                         str(self.all_buy)+" Tha all profit: "+str(self.all_profit))
-        Common.plog_info("===============================================================")
+        if self.qty_filled_buy > 0:
+            self.buy_price = result['price']
+            self.all_buy += self.buy_price
+            self.all_profit -= self.buy_price
+            Common.plog_info("===============================================================")
+            Common.plog_info("We buy :"+str(self.buy_price)+" The all buy until now: "+
+                             str(self.all_buy)+" Tha all profit: "+str(self.all_profit))
+            Common.plog_info("===============================================================")
+        else:
+            Common.plog_info("Not success to buy this package. Built the new one")
+            return False
+
+        return True
 
     """
         Three loops try to sell the order, first for the profit, second for the same price, third lost the money
@@ -132,4 +136,6 @@ class SellSide(object):
         Common.plog_info("The result: "+str(result))
 
 
-SellSide()
+if __name__ == '__main__':
+    SellSide().game_run()
+
