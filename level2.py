@@ -87,23 +87,23 @@ class SellSide(object):
     """
         Minimal sell loop.
         Decrease the price each iteration until the original price.
+        Return how much we sold
     """
     def sell_loop(self, price, num_to_sell, delta_price=0):
         sell_now = num_to_sell
+        how_much_we_sold = 0
         for i in range (1, self.NUM_ITERATIONS):
             sold=self.basic_sell(sell_now, price-delta_price*i)
+            how_much_we_sold+=sold
             if sold == sell_now:
                 Common.plog_info("We sell everything in this set")
-                sell_now -= sold
-                if sell_now < 0:
-                    raise ValueError("Sell can't be negative")
                 break
-            else:
-                sell_now -= sold
-                Common.plog_info("We continue sell "+str(sell_now))
-                if sell_now < 0:
-                    raise ValueError("Sell can't be negative")
-        return sell_now
+            sell_now -= sold
+            if sell_now < 0:
+                raise ValueError("Sell can't be negative")
+            Common.plog_info("We continue sell "+str(sell_now))
+
+        return how_much_we_sold
 
     """
         Basic sell
