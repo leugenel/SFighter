@@ -14,10 +14,10 @@ class SellSide(object):
     DELTA_PRICE = 10
 
     qty_filled_buy = 0
-    qty_filled_sell = 0
+#    qty_filled_sell = 0
 
     buy_price = 0
-    sell_price = 0
+#    sell_price = 0
 
     all_profit=0
     all_buy=0
@@ -67,21 +67,23 @@ class SellSide(object):
     """
     def sell_shares(self, sell_this_value):
         order_sell = sell_this_value
-        self.qty_filled_sell = 0
+        #sell_price = 0
         Common.plog_info("Try sell with profit")
-        order_sell = self.sell_loop(self.buy_price + self.UPDATE_PRICE, order_sell, self.DELTA_PRICE)
-        if self.qty_filled_sell < sell_this_value: # Now we sell for the original price - no profit
+        qty_filled_sell, sell_price = self.sell_loop(self.buy_price + self.UPDATE_PRICE, order_sell, self.DELTA_PRICE)
+        if qty_filled_sell < sell_this_value:  # Now we sell for the original price - no profit
             Common.plog_info("Try sell w/o profit")
-            order_sell = self.sell_loop(self.buy_price, order_sell)
-        if self.qty_filled_sell < order_sell: # Now we sell for the worse price - lost money
-            Common.plog_info("Try sell with lost money")
-            self.sell_loop(self.buy_price, order_sell, self.DELTA_PRICE)
+            qty_filled_sell+=self.sell_loop(self.buy_price, sell_this_value-qty_filled_sell)[0]  # no delta we sell in constant price
+            sell_price+=self.sell_loop(self.buy_price, sell_this_value-qty_filled_sell)[1]
+        if qty_filled_sell < sell_this_value: # Now we sell for the worse price - lost money
+            Common.plog_info("Try sell with lost money")  # with delta we decrease the price
+            qty_filled_sell+=self.sell_loop(self.buy_price, sell_this_value-qty_filled_sell, self.DELTA_PRICE)[0]
+            sell_price+=self.sell_loop(self.buy_price, sell_this_value-qty_filled_sell)[1]
 
-        self.all_sell += self.sell_price
-        self.all_profit += self.sell_price
+        self.all_sell += qty_filled_sell
+        self.all_profit += sell_price
         Common.plog_info("===============================================================")
-        Common.plog_info("We sell :"+str(self.sell_price)+" The all sell until now: "+
-                     str(self.all_sell)+" Tha all profit: "+str(self.all_profit))
+        Common.plog_info("We sell number of shares: "+str(qty_filled_sell)+ "We sell $:"+ str(sell_price)+
+                         "All sell until now: "+str(self.all_sell)+" All profit: "+str(self.all_profit))
         Common.plog_info("===============================================================")
 
     """
@@ -90,6 +92,9 @@ class SellSide(object):
         Return how much we sold
     """
     def sell_loop(self, price, num_to_sell, delta_price=0):
+        if num_to_sell <= 0:
+            Common.plog_info("Nothing to sell")
+            return 0
         sell_now = num_to_sell
         how_much_we_sold = 0
         for i in range (1, self.NUM_ITERATIONS):
@@ -122,9 +127,9 @@ class SellSide(object):
         is_ok, result_json_status = quoteRest.get_order_status(config.venue, config.stock, sell_id)
         Common.plog_info("Sell status:")
         self.response_process(response, result_json_status)
-        self.qty_filled_sell += result_json_status['totalFilled']
-        self.sell_price = result_json_status['price']
-        return result_json_status['totalFilled']
+ #       self.qty_filled_sell += result_json_status['totalFilled']
+ #       self.sell_price += result_json_status['price']
+        return result_json_status['totalFilled'], result_json_status['price']
 
     """
             Response processing

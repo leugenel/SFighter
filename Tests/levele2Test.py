@@ -98,12 +98,13 @@ class level2Test(unittest.TestCase):
         mock_cancel_order.return_value =  (200, None)
         mock_order_status.return_value = (200, mock_result_order_status)
 
-        res = sell.basic_sell(30, 100)
+        res, price = sell.basic_sell(30, 100)
 
-        assert res == 30
-        assert sell.qty_filled_sell == mock_result_order_status['totalFilled'], "not equal:" + str(sell.qty_filled_sell) +\
-                                                                                " and "+ str(mock_result_order_status['totalFilled'])
-        assert sell.sell_price == mock_result_order_status['price']
+        assert res == mock_result_order_status['totalFilled']
+        assert price == mock_result_order_status['price']
+#        assert sell.qty_filled_sell == mock_result_order_status['totalFilled'], "not equal:" + str(sell.qty_filled_sell) +\
+#                                                                                " and "+ str(mock_result_order_status['totalFilled'])
+#        assert sell.sell_price == mock_result_order_status['price']
 
     @mock.patch('quoteRest.cancel_order')
     @mock.patch('quoteRest.set_order')
@@ -133,11 +134,12 @@ class level2Test(unittest.TestCase):
         mock_cancel_order.return_value =  (200, None)
         mock_order_status.return_value = (200, mock_result_order_status)
 
-        res = sell.basic_sell(30, 100)
+        res, price = sell.basic_sell(30, 100)
 
         assert res == 0
-        assert sell.qty_filled_sell == 0
-        assert sell.sell_price == 0
+        assert price == 0
+#        assert sell.qty_filled_sell == 0
+#        assert sell.sell_price == 0
 
     @mock.patch('level2.SellSide.basic_sell')
     def test_sell_loop(self, mock_basic_sell):
@@ -154,3 +156,64 @@ class level2Test(unittest.TestCase):
 
         mock_basic_sell.assert_called_with(need_sell, price-sell.DELTA_PRICE)
         assert res == need_sell , "not equal:" + str(res) + " and "+ str(need_sell)
+
+    @mock.patch('level2.SellSide.basic_sell')
+    def test_sell_loop_with_zero(self, mock_basic_sell):
+        print "============================="
+        print "Test test_sell_loop_with_zero"
+        print "============================="
+
+        need_sell = 0
+        price = 100
+        sell = level2.SellSide()
+        mock_basic_sell.return_value = need_sell
+
+        res = sell.sell_loop(price, need_sell, sell.DELTA_PRICE)
+        mock_basic_sell.assert_not_called()
+        assert res == 0
+
+
+    @mock.patch('level2.SellSide.basic_sell')
+    def test_sell_loop_partial(self, mock_basic_sell):
+        print "============================="
+        print "Test test_sell_loop_partial"
+        print "============================="
+
+        need_sell = 10
+        price = 100
+        sell = level2.SellSide()
+        mock_basic_sell.return_value = need_sell//2
+
+        res = sell.sell_loop(price, need_sell, sell.DELTA_PRICE)
+
+        mock_basic_sell.assert_any_call(need_sell, price-sell.DELTA_PRICE)
+        mock_basic_sell.assert_any_call(need_sell//2, price-sell.DELTA_PRICE*2)
+        assert res == need_sell , "not equal:" + str(res) + " and "+ str(need_sell)
+
+    @mock.patch('level2.SellSide.basic_sell')
+    def test_sell_loop_partial_with_exception(self, mock_basic_sell):
+        print "============================="
+        print "Test test_sell_loop_partial_with_exception"
+        print "============================="
+
+        need_sell = 10
+        price = 100
+        sell = level2.SellSide()
+        mock_basic_sell.return_value = need_sell+5
+        # Exception because negative sailing
+        self.assertRaises(ValueError, sell.sell_loop, price, need_sell, sell.DELTA_PRICE)
+
+    @mock.patch('level2.SellSide.sell_loop')
+    def test_sell_shares_happy(self, mock_sell_loop):
+        print "============================="
+        print "Test test_sell_shares_happy"
+        print "============================="
+
+        sell = level2.SellSide()
+        sell_this = 100
+        price = 0
+        sell.qty_filled_sell = sell_this
+        mock_sell_loop.return_value = sell_this, price
+        sell.sell_shares(sell_this)
+        assert sell.all_sell == sell_this, "not equal:" + str(sell.all_sell) + " and "+ str(sell_this)
+
