@@ -259,4 +259,3 @@ class level2Test(unittest.TestCase):
         sell.sell_shares(sell_this)
         assert sell.all_sell == expected_sell, "not equal:" + str(sell.all_sell) + " and "+ str(expected_sell)
         assert sell.all_profit == expected_price
-        

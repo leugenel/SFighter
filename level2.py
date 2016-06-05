@@ -5,6 +5,7 @@ import sys
 import Common
 import quoteRest
 import logging
+import threading
 
 class SellSide(object):
     SLEEP_TIME = 0.1
@@ -21,10 +22,21 @@ class SellSide(object):
     all_sell=0
 
     def __init__(self):
-        logging.basicConfig(filename='level2.log',level=logging.DEBUG, filemode='w')
+        logging.basicConfig(filename='level2.log',level=logging.DEBUG, filemode='w',
+                            format='[%(levelname)s] (%(threadName)-10s) %(message)s')
 
     """
-        Main procedure
+        Main threads procedure
+    """
+    def start_all(self, num_threads):
+        threads = [ ]
+        for i in range(num_threads):
+            thread = threading.Thread(target=self.game_run)
+            threads.append(thread)
+            thread.start()
+
+    """
+        Main one thread procedure
     """
     def game_run(self):
         for i in range (1, self.NUM_ITERATIONS*10):
@@ -97,7 +109,7 @@ class SellSide(object):
         how_much_we_sold = 0
         sold_price = 0
         for i in range (1, self.NUM_ITERATIONS):
-            sold, sold_price =self.basic_sell(sell_now, price-delta_price*i)
+            sold, sold_price = self.basic_sell(sell_now, price-delta_price*i)
             how_much_we_sold+=sold
             if sold == sell_now:
                 Common.plog_info("We sell everything in this set")
@@ -139,5 +151,5 @@ class SellSide(object):
 
 
 if __name__ == '__main__':
-    SellSide().game_run()
+    SellSide().start_all(2)
 
