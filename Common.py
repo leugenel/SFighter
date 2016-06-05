@@ -10,8 +10,8 @@ def get_quote_price():
     response, result = quoteRest.quote_quick(config.venue, config.stock)
     price=0
     if response == 200:
-        plog_info("get_quote_price() - result")
-        plog_info(result)
+        #plog_info("get_quote_price() - result")
+        #plog_info(result)
         if result['askSize']==0 or result['bidSize']==0:
             return price
         else:

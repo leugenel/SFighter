@@ -5,6 +5,7 @@ import sys
 import Common
 import quoteRest
 import logging
+import json
 import threading
 
 class SellSide(object):
@@ -60,9 +61,10 @@ class SellSide(object):
             self.buy_price = result['price']
             self.all_buy += self.buy_price
             self.all_profit -= self.buy_price
+            Common.plog_info(result)
             Common.plog_info("===============================================================")
             Common.plog_info("We buy :"+str(self.buy_price)+" The all buy until now: "+
-                             str(self.all_buy)+" Tha all profit: "+str(self.all_profit))
+                             str(self.all_buy)+" The all profit: "+str(self.all_profit))
             Common.plog_info("===============================================================")
         else:
             Common.plog_info("Not success to buy this package. Built the new one")
@@ -109,14 +111,20 @@ class SellSide(object):
         how_much_we_sold = 0
         sold_price = 0
         for i in range (1, self.NUM_ITERATIONS):
-            sold, sold_price = self.basic_sell(sell_now, price-delta_price*i)
+            result = self.basic_sell(sell_now, price-delta_price*i)
+            sold = result['totalFilled']
+            if sold == 0:
+                continue
             how_much_we_sold+=sold
             if sold == sell_now:
+                Common.plog_info(result)
                 Common.plog_info("We sell everything in this set")
                 break
             sell_now -= sold
             if sell_now < 0:
                 raise ValueError("Sell can't be negative")
+            if result['fills']:
+                sold_price += result['fills'][0]['price']
             Common.plog_info("We continue sell "+str(sell_now))
 
         return how_much_we_sold, sold_price
@@ -138,7 +146,7 @@ class SellSide(object):
         is_ok, result_json_status = quoteRest.get_order_status(config.venue, config.stock, sell_id)
         Common.plog_info("Sell status:")
         self.response_process(response, result_json_status)
-        return result_json_status['totalFilled'], result_json_status['price']
+        return result_json_status
 
     """
             Response processing
@@ -147,7 +155,7 @@ class SellSide(object):
         if response != 200:
             Common.plog_info("We failed with " + str(response))
             sys.exit()
-        Common.plog_info("The result: "+str(result))
+        #Common.plog_info("The result: "+str(result))
 
 
 if __name__ == '__main__':

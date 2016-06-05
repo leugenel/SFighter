@@ -6,6 +6,7 @@ import Common
 import config
 import level2
 
+
 class level2Test(unittest.TestCase):
 
     @mock.patch('quoteRest.set_order')
@@ -98,10 +99,10 @@ class level2Test(unittest.TestCase):
         mock_cancel_order.return_value =  (200, None)
         mock_order_status.return_value = (200, mock_result_order_status)
 
-        res, price = sell.basic_sell(30, 100)
+        result = sell.basic_sell(30, 100)
 
-        assert res == mock_result_order_status['totalFilled']
-        assert price == mock_result_order_status['price']
+        assert result['totalFilled'] == mock_result_order_status['totalFilled']
+        assert result['price'] == mock_result_order_status['price']
 
     @mock.patch('quoteRest.cancel_order')
     @mock.patch('quoteRest.set_order')
@@ -131,10 +132,10 @@ class level2Test(unittest.TestCase):
         mock_cancel_order.return_value =  (200, None)
         mock_order_status.return_value = (200, mock_result_order_status)
 
-        res, price = sell.basic_sell(30, 100)
+        result = sell.basic_sell(30, 100)
 
-        assert res == 0
-        assert price == 0
+        assert result['totalFilled'] == 0
+        assert result['price'] == 0
 
     @mock.patch('level2.SellSide.basic_sell')
     def test_sell_loop(self, mock_basic_sell):
@@ -142,26 +143,33 @@ class level2Test(unittest.TestCase):
         print "Test test_basic_sell_loop"
         print "============================="
 
-        need_sell = 10
-        price = 100
+        mock_result_sell = {u'direction': u'sell', u'ok': True, u'ts': u'2016-06-03T19:51:14.687483425Z',
+                            u'fills': [{u'price': 7479, u'ts': u'2016-06-03T19:51:14.902628393Z', u'qty': 30}],
+                            u'originalQty': 30, u'orderType': u'limit', u'symbol': u'FOOW', u'venue': u'YTYREX', u'account': u'BAM40725510',
+                            u'qty': 0, u'id': 1689, u'totalFilled': 30, u'open': False, u'price': 7479}
+        need_sell = 30
+        price = 7479
         sell = level2.SellSide()
-        mock_basic_sell.return_value = need_sell, price
+        mock_basic_sell.return_value = mock_result_sell
 
         res, res_price = sell.sell_loop(price, need_sell, sell.DELTA_PRICE)
 
         mock_basic_sell.assert_called_with(need_sell, price-sell.DELTA_PRICE)
-        assert res == need_sell , "not equal:" + str(res) + " and "+ str(need_sell)
+        assert res == mock_result_sell['totalFilled'] , "not equal:" + str(res) + " and "+ str(need_sell)
 
     @mock.patch('level2.SellSide.basic_sell')
     def test_sell_loop_with_zero(self, mock_basic_sell):
         print "============================="
         print "Test test_sell_loop_with_zero"
         print "============================="
-
+        mock_result_sell = {u'direction': u'sell', u'ok': True, u'ts': u'2016-06-03T19:50:01.358544248Z',
+                            u'fills': [], u'originalQty': 30, u'orderType': u'limit',
+                            u'symbol': u'FOOW', u'venue': u'YTYREX', u'account': u'BAM40725510',
+                            u'qty': 30, u'id': 1302, u'totalFilled': 0, u'open': True, u'price': 7933}
         need_sell = 0
         price = 0
         sell = level2.SellSide()
-        mock_basic_sell.return_value = need_sell, price
+        mock_basic_sell.return_value = mock_result_sell #need_sell, price
         res, res_price = sell.sell_loop(price, need_sell, sell.DELTA_PRICE)
         mock_basic_sell.assert_not_called()
         assert res == 0
@@ -172,11 +180,15 @@ class level2Test(unittest.TestCase):
         print "============================="
         print "Test test_sell_loop_partial"
         print "============================="
+        mock_result_sell = {u'direction': u'sell', u'ok': True, u'ts': u'2016-06-03T19:51:14.687483425Z',
+                            u'fills': [{u'price': 100, u'ts': u'2016-06-03T19:51:14.902628393Z', u'qty': 5}],
+                            u'originalQty': 10, u'orderType': u'limit', u'symbol': u'FOOW', u'venue': u'YTYREX', u'account': u'BAM40725510',
+                            u'qty': 0, u'id': 1689, u'totalFilled': 5, u'open': False, u'price': 100}
 
         need_sell = 10
         price = 100
         sell = level2.SellSide()
-        mock_basic_sell.return_value = need_sell//2, price
+        mock_basic_sell.return_value = mock_result_sell
 
         res, res_price = sell.sell_loop(price, need_sell, sell.DELTA_PRICE)
 
@@ -191,10 +203,15 @@ class level2Test(unittest.TestCase):
         print "Test test_sell_loop_partial_with_exception"
         print "============================="
 
+        mock_result_sell = {u'direction': u'sell', u'ok': True, u'ts': u'2016-06-03T19:51:14.687483425Z',
+                            u'fills': [{u'price': 150, u'ts': u'2016-06-03T19:51:14.902628393Z', u'qty': 15}],
+                            u'originalQty': 10, u'orderType': u'limit', u'symbol': u'FOOW', u'venue': u'YTYREX', u'account': u'BAM40725510',
+                            u'qty': 0, u'id': 1689, u'totalFilled': 15, u'open': False, u'price': 150}
+
         need_sell = 10
         price = 100
         sell = level2.SellSide()
-        mock_basic_sell.return_value = need_sell+5, price
+        mock_basic_sell.return_value = mock_result_sell
         # Exception because negative sailing
         self.assertRaises(ValueError, sell.sell_loop, price, need_sell, sell.DELTA_PRICE)
 
