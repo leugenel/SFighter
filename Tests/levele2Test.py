@@ -68,7 +68,7 @@ class level2Test(unittest.TestCase):
 
         assert sell.qty_filled_buy == mock_result['totalFilled']
         assert sell.buy_price == mock_result['price']
-        assert sell.all_buy == mock_result['price']
+        assert sell.all_buy == mock_result['totalFilled']
         assert sell.all_profit == - mock_result['price']
 
     @mock.patch('quoteRest.cancel_order')
@@ -140,7 +140,7 @@ class level2Test(unittest.TestCase):
     @mock.patch('level2.SellSide.basic_sell')
     def test_sell_loop(self, mock_basic_sell):
         print "============================="
-        print "Test test_basic_sell_loop"
+        print "Test test_sell_loop"
         print "============================="
 
         mock_result_sell = {u'direction': u'sell', u'ok': True, u'ts': u'2016-06-03T19:51:14.687483425Z',
@@ -156,6 +156,7 @@ class level2Test(unittest.TestCase):
 
         mock_basic_sell.assert_called_with(need_sell, price-sell.DELTA_PRICE)
         assert res == mock_result_sell['totalFilled'] , "not equal:" + str(res) + " and "+ str(need_sell)
+        assert res_price == mock_result_sell['fills'][0]['price'], "not equal:" + str(res_price) + " and "+ str(mock_result_sell['fills'][0]['price'])
 
     @mock.patch('level2.SellSide.basic_sell')
     def test_sell_loop_with_zero(self, mock_basic_sell):
@@ -190,12 +191,13 @@ class level2Test(unittest.TestCase):
         sell = level2.SellSide()
         mock_basic_sell.return_value = mock_result_sell
 
+        # This call will launch twice
         res, res_price = sell.sell_loop(price, need_sell, sell.DELTA_PRICE)
 
         mock_basic_sell.assert_any_call(need_sell, price-sell.DELTA_PRICE)
         mock_basic_sell.assert_any_call(need_sell//2, price-sell.DELTA_PRICE*2)
         assert res == need_sell , "not equal:" + str(res) + " and "+ str(need_sell)
-        assert price == res_price
+        assert price*2 == res_price, "not equal:" + str(price*2) + " and " + str(res_price)
 
     @mock.patch('level2.SellSide.basic_sell')
     def test_sell_loop_partial_with_exception(self, mock_basic_sell):
